@@ -1,15 +1,23 @@
 version: "3"
 
 services:
-  database:
-    container_name: postgres_database
+  postgres-database:
     build:
       context: ./database/
-      dockerfile: ./Containerfile
-    image: initialized_postgres
+      dockerfile: Containerfile
+    image: pre-initialized-postgres
     environment:
       - POSTGRES_PASSWORD=1234
     ports:
       - 5432:5432
     volumes:
       - ./database/data:/var/lib/postgresql/data:Z
+
+  flask:
+    build:
+      context: ./server/
+      dockerfile: Containerfile 
+    image: flask-webapp
+    ports:
+      - 5000:5000
+    command: flask run --port 5000 --host 0.0.0.0

@@ -1,0 +1,7 @@
+FROM python:3.10-slim-buster
+
+ADD ./app.py /app.py
+ADD ./settings.toml /settings.toml
+ADD ./requirements.txt /requirements.txt
+
+RUN ["pip", "install", "-r", "./requirements.txt"]
