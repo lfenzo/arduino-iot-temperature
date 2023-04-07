@@ -1,6 +1,7 @@
 [database]
 # host name to be resolved in the network (instead of fixing the IP addresses)
-host = "postgres-database"
+#host = "postgres-database"
+host = "0.0.0.0"
 database = "atmospheric"
 user = "postgres"
 password = "1234"

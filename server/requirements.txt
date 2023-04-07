@@ -1,3 +1,4 @@
-flask
+fastapi
+uvicorn
 pg8000
 toml

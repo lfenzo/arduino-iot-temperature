@@ -13,11 +13,11 @@ services:
     volumes:
       - ./database/data:/var/lib/postgresql/data:Z
 
-  flask:
-    build:
-      context: ./server/
-      dockerfile: Containerfile 
-    image: flask-webapp
-    ports:
-      - 5000:5000
-    command: flask run --port 5000 --host 0.0.0.0
+        #  fastapi:
+        #    build:
+        #      context: ./server/
+        #      dockerfile: Containerfile 
+        #    image: fast-api
+        #    ports:
+        #      - 5000:5000
+        #    command: uvicorn --host 0.0.0.0 
