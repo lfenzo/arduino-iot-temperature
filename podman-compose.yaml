@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  postgres-database:
+  postgres:
     build:
       context: ./database/
       dockerfile: Containerfile
@@ -13,11 +13,11 @@ services:
     volumes:
       - ./database/data:/var/lib/postgresql/data:Z
 
-        #  fastapi:
-        #    build:
-        #      context: ./server/
-        #      dockerfile: Containerfile 
-        #    image: fast-api
-        #    ports:
-        #      - 5000:5000
-        #    command: uvicorn --host 0.0.0.0 
+  fastapi:
+    build:
+      context: ./server/
+      dockerfile: Containerfile 
+    image: fast-api
+    ports:
+      - 8000:8000
+    command: uvicorn server:app --host 0.0.0.0 --port 8000
