@@ -20,15 +20,19 @@ def __submit_sql_transaction(sql: str):
         return conn.run(sql)
 
 
+@app.get("/test")
+async def hello(request: Request):
+    print("requisição recebida com sucesso!")
+    return "hello"
+
+
 @app.get("/sensor/", summary="Return all observations between the specified period.")
-async def get_observations_in_period(request: Request):
+async def get_observations_in_period(start, end):
     """
     Parameters
     ----------
     `request : Request`
     """
-    start = request.query_params.get("start")
-    end = request.query_params.get("end")
     sql = f"""
         SELECT *
         FROM public.sensor_observations
