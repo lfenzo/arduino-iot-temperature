@@ -12,7 +12,8 @@ settings = toml.load("./settings.toml")
 class TempObs(BaseModel):
     datetime: str
     device: str
-    temp: float
+    temperature: float
+    humidity: float
 
 
 def __submit_sql_transaction(sql: str):
@@ -26,7 +27,7 @@ async def hello(request: Request):
     return "hello"
 
 
-@app.get("/sensor/", summary="Return all observations between the specified period.")
+@app.get("/sensor_observations/", summary="Return all observations between the specified period.")
 async def get_observations_in_period(start, end):
     """
     Parameters
@@ -41,11 +42,11 @@ async def get_observations_in_period(start, end):
     return __submit_sql_transaction(sql)
 
 
-@app.post("/sensor/", summary="Insert a temperature observation.")
+@app.post("/sensor_observations/", summary="Insert a temperature observation.")
 async def insert_observation(obs: TempObs):
     sql = f"""
         INSERT INTO public.sensor_observations
-        VALUES ('{obs.datetime}', '{obs.device}', {obs.temp});
+        VALUES ('{obs.datetime}', '{obs.device}', {obs.temp}, {obs.humidity});
         """
     __submit_sql_transaction(sql)
     return obs

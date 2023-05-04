@@ -27,36 +27,64 @@ const int LED_PIN = 32;
 //
 const char *SSID = "Casinha";
 const char *PASSWORD = "5cJZXT9b5Hmb2FFcAmmQ";
-const String SERVER_ADDRESS = "http://192.168.0.19:8000";
+const char *SERVER_ADDRESS = "http://192.168.0.14:8000";
 
 //
 // NTP setup settings
 //
+#define MAX_DATETIME_LENGTH 20
 const char *NTP_SERVER = "pool.ntp.org";
 const int gmt_offset_sec = -10800;  // local time is GMT-3 --> 3 * -3600 = -10.800
 const int daylight_offset_sec = 0;
+char DATETIME[MAX_DATETIME_LENGTH];
 
 
 
+const char *DEVICE_ID = "esp32-dht11-1";
 
 
 
 void setup() {
+
     Serial.begin(115200);
     pinMode(TOGGLE_BUTTOM_PIN, INPUT);
     pinMode(LED_PIN, OUTPUT);
 
-    //initialize_wifi();
+    // setting up wifi for intermittent connection
+    initialize_wifi();
+    Serial.printf("Connected to WiFi. IP: %s\n", WiFi.localIP().toString().c_str());
+
+    // initializing the used sensors
     dht.begin();
+
+    // settingup the datetime configuration (it suffices to set this up only once because the
+    // other datetime queries will be performed using the current local time).
+    configTime(gmt_offset_sec, daylight_offset_sec, NTP_SERVER);
 }
+
 
 void loop() {
     verify_current_transmitting_behavior();
-    Serial.println(IS_TRANSMITTING_DATA);
 
-    Serial.print("temperature\t");
-    Serial.println(dht.readTemperature());
-    delay(2000);
+    if (IS_TRANSMITTING_DATA) {
+        delay(2000);
+
+        float temperature = dht.readTemperature();
+        Serial.printf("temperature:\t %f\n", temperature);
+
+        float humidity = dht.readHumidity();
+        Serial.printf("humidity:\t %f\n", humidity);
+
+        current_datetime_from_ntp(DATETIME, "%F %T", MAX_DATETIME_LENGTH);
+        Serial.printf("datetime:\t %s\n", DATETIME);
+
+        // acende led de transmissão
+        char query[150];
+        sprintf(query, "?device=%s&temperature=%.2f&humidity=%.2f&datetime=%s", DEVICE_ID, temperature, humidity, DATETIME);
+        //http_post(SERVER_ADDRESS, "sensor_observations", query);
+        http_request(SERVER_ADDRESS, "test", "");
+        // apaga led de transmissão
+    }
 }
 
 
@@ -68,43 +96,33 @@ void initialize_wifi() {
         delay(500);
         Serial.print(".");
     }
-
-    Serial.println("\nWifi connected...");
 }
 
 
+bool http_request(String req_type, String server, String endpoint, String query) {
 
-//bool http_get(String server, String endpoint, String query) {
-//
-//    if (!WiFi.status() == WL_CONNECTED) {
-//        Serial.println("WiFi not connected");
-//        return false;
-//    }
-//
-//    String URL = server + endpoint;
-//    Serial.println(URL);
-//
-//    HTTPClient http;
-//    http.begin(URL.c_str());
-//
-//    int http_response_code = http.GET();
-//
-//    Serial.print("HTTP Response code: ");
-//    Serial.println(http_response_code);
-//
-//    if (http_response_code > 0) {
-//        String payload = http.getString();
-//        Serial.println(payload);
-//    }
-//    else {
-//        Serial.print("Error code: ");
-//    }
-//
-//    // Free resources
-//    http.end();
-//
-//    return true;
-//}
+    if (!WiFi.status() == WL_CONNECTED) {
+        Serial.printf("WiFi is not connected to network \"%s\".\n", SSID);
+        return false;
+    }
+
+    String URL = server + "/" + endpoint + query;
+    HTTPClient http;
+
+    http.begin(URL.c_str());
+    
+    int http_response_code = http.GET();
+    Serial.printf("HTTP Response code: %i\n", http_response_code);
+
+    if (http_response_code > 0) {
+        String payload = http.getString();
+        Serial.println(payload);
+    }
+
+    http.end();
+
+    return true;
+}
 
 
 void verify_current_transmitting_behavior() {
@@ -113,7 +131,6 @@ void verify_current_transmitting_behavior() {
     if (buttom_current == 1 && buttom_previous == 0) {  // buttom pressed
         IS_TRANSMITTING_DATA = !IS_TRANSMITTING_DATA;
         digitalWrite(LED_PIN, IS_TRANSMITTING_DATA);
-        Serial.println(WiFi.localIP());
     }
 
     buttom_previous = buttom_current;
@@ -121,13 +138,18 @@ void verify_current_transmitting_behavior() {
 }
 
 
-void current_datetime_from_ntp(String format) {
+/*
+    Once set the NTP current time, this function will query the current time from the
+    configuration and retrieve the current datetime in the specified '*fmt' using as sink
+    the string pointed by '*str' (the 'length' of the string must also be specified).
+*/
+void current_datetime_from_ntp(char *str, char *fmt, int length) {
     struct tm timeinfo;
 
     if (!getLocalTime(&timeinfo)) {
         Serial.println("Failed to obtain time");
         return;
     }
-    Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-    //Serial.println(&timeinfo, format);
+
+    strftime(str, length, fmt, &timeinfo); 
 }
