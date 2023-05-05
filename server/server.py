@@ -46,7 +46,7 @@ async def get_observations_in_period(start, end):
 async def insert_observation(obs: TempObs):
     sql = f"""
         INSERT INTO public.sensor_observations
-        VALUES ('{obs.datetime}', '{obs.device}', {obs.temp}, {obs.humidity});
+        VALUES ('{obs.datetime}', '{obs.device}', {obs.temperature}, {obs.humidity});
         """
     __submit_sql_transaction(sql)
     return obs

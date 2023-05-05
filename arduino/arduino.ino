@@ -67,6 +67,7 @@ void loop() {
     verify_current_transmitting_behavior();
 
     if (IS_TRANSMITTING_DATA) {
+
         delay(2000);
 
         float temperature = dht.readTemperature();
@@ -78,12 +79,15 @@ void loop() {
         current_datetime_from_ntp(DATETIME, "%F %T", MAX_DATETIME_LENGTH);
         Serial.printf("datetime:\t %s\n", DATETIME);
 
-        // acende led de transmissão
-        char query[150];
-        sprintf(query, "?device=%s&temperature=%.2f&humidity=%.2f&datetime=%s", DEVICE_ID, temperature, humidity, DATETIME);
-        //http_post(SERVER_ADDRESS, "sensor_observations", query);
-        http_request(SERVER_ADDRESS, "test", "");
-        // apaga led de transmissão
+        String json_query = "";
+        json_query += "{";
+        json_query += "\"device\":\"" + String(DEVICE_ID) + "\",";
+        json_query += "\"datetime\":\"" + String(DATETIME) + "\",";
+        json_query += "\"temperature\":\"" + String(temperature) + "\",";
+        json_query += "\"humidity\":\"" + String(humidity) + "\"";
+        json_query += "}";
+
+        http_request("POST", String(SERVER_ADDRESS) + "/" + "sensor_observations/", json_query);
     }
 }
 
@@ -99,19 +103,28 @@ void initialize_wifi() {
 }
 
 
-bool http_request(String req_type, String server, String endpoint, String query) {
+bool http_request(String req_type, String url, String query) {
 
     if (!WiFi.status() == WL_CONNECTED) {
         Serial.printf("WiFi is not connected to network \"%s\".\n", SSID);
         return false;
     }
 
-    String URL = server + "/" + endpoint + query;
     HTTPClient http;
+    int http_response_code;
 
-    http.begin(URL.c_str());
-    
-    int http_response_code = http.GET();
+    // GET request to the endpoint providing a query built-in
+    if (req_type == "GET") {
+        http.begin((url + query).c_str());
+        http_response_code = http.GET();
+    }
+    // POST request to the endpoint passing the query as a parameter to the POST method
+    else if (req_type == "POST") {
+        http.begin(url.c_str());
+        http.addHeader("Content-Type", "application/json");
+        http_response_code = http.POST(query);
+    }
+        
     Serial.printf("HTTP Response code: %i\n", http_response_code);
 
     if (http_response_code > 0) {
