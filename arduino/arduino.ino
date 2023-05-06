@@ -39,7 +39,7 @@ const int daylight_offset_sec = 0;
 char DATETIME[MAX_DATETIME_LENGTH];
 
 
-
+#define OBSERVATION_INTERVAL 3 * 1000 // miliseconds
 const char *DEVICE_ID = "esp32-dht11-1";
 
 
@@ -68,7 +68,7 @@ void loop() {
 
     if (IS_TRANSMITTING_DATA) {
 
-        delay(2000);
+        delay(OBSERVATION_INTERVAL);
 
         float temperature = dht.readTemperature();
         Serial.printf("temperature:\t %f\n", temperature);
@@ -79,8 +79,7 @@ void loop() {
         current_datetime_from_ntp(DATETIME, "%F %T", MAX_DATETIME_LENGTH);
         Serial.printf("datetime:\t %s\n", DATETIME);
 
-        String json_query = "";
-        json_query += "{";
+        String json_query = "{";
         json_query += "\"device\":\"" + String(DEVICE_ID) + "\",";
         json_query += "\"datetime\":\"" + String(DATETIME) + "\",";
         json_query += "\"temperature\":\"" + String(temperature) + "\",";
